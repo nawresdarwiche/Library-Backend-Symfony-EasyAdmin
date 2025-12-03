@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Aperçu - {{ livre.titre }}{% endblock %}
+
+{% block body %}
+<h2>{{ livre.titre }}</h2>
+<p>Auteur(s):
+    {% for au in livre.auteurs %}
+        {{ au.nom }}{% if not loop.last %}, {% endif %}
+    {% endfor %}
+</p>
+<p>Catégorie: {{ livre.categorie.designation }}</p>
+<p>Nombre de pages: {{ livre.nbPages }}</p>
+<p>Date d’édition: {{ livre.dateEdition ? livre.dateEdition|date('d/m/Y') : 'N/A' }}</p>
+{% if livre.description %}
+<p>Description: {{ livre.description }}</p>
+{% endif %}
+
+{% if livre.fichier %}
+<a href="{{ path('livre_read', {'id': livre.id}) }}" class="btn btn-primary mt-3">
+    Lire maintenant
+</a>
+<a href="{{ asset('uploads/files/' ~ livre.fichier) }}" download class="btn btn-secondary mt-3">
+    Télécharger
+</a>
+{% endif %}
+{% endblock %}

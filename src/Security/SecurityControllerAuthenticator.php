@@ -43,15 +43,28 @@ class SecurityControllerAuthenticator extends AbstractLoginFormAuthenticator
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
-    {
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            return new RedirectResponse($targetPath);
-        }
-
-        // For example:
-        return new RedirectResponse($this->urlGenerator->generate('dashboard'));
-        throw new \Exception('TODO: provide a valid redirect inside '.__FILE__);
+{
+    // Si l'utilisateur voulait aller à une page protégée → redirection automatique
+    if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
+        return new RedirectResponse($targetPath);
     }
+
+    // Récupérer les rôles de l’utilisateur
+    $roles = $token->getRoleNames();
+
+    // Redirection selon le rôle
+    if (in_array('ROLE_ADMIN', $roles)) {
+        return new RedirectResponse($this->urlGenerator->generate('admin'));
+    }
+
+    if (in_array('ROLE_USER', $roles)) {
+        return new RedirectResponse($this->urlGenerator->generate('app_home'));
+    }
+
+    // Redirection par défaut (sécurité)
+    return new RedirectResponse($this->urlGenerator->generate('app_home'));
+}
+
 
     protected function getLoginUrl(Request $request): string
     {

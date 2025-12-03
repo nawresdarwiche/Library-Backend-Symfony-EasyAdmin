@@ -1,0 +1,325 @@
+{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-book me-2"></i>{{ livre.titre }}</h4>
+                </div>
+                <div class="card-body">
+                    <div id="readerContainer">
+                        <!-- Le lecteur sera chargé ici -->
+                    </div>
+                    
+                    <!-- Fallback si la lecture directe échoue -->
+                    <div id="fallbackContent" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle me-2"></i>Options de lecture</h5>
+                            <p>Plusieurs options sont disponibles pour lire ce livre :</p>
+                            
+                            <div class="row mt-4">
+                                {% if livre.fichier %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-download fa-3x text-primary mb-3"></i>
+                                            <h5>Téléchargement</h5>
+                                            <p>Téléchargez le livre pour le lire sur votre appareil</p>
+                                            <a href="{{ asset('uploads/files/' ~ livre.fichier) }}" 
+                                               class="btn btn-primary" download>
+                                                <i class="fas fa-download me-1"></i>Télécharger
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-print fa-3x text-primary mb-3"></i>
+                                            <h5>Lecture en ligne</h5>
+                                            <p>Ouvrir dans Google Docs Viewer (nécessite internet)</p>
+                                            {% if livre.fichier %}
+                                                {% set fileUrl = absolute_url(asset('uploads/files/' ~ livre.fichier)) %}
+                                                <a href="https://docs.google.com/viewer?url={{ fileUrl|url_encode }}" 
+                                                   target="_blank" class="btn btn-primary">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Ouvrir dans Google Docs
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+
+<script src="https://unpkg.com/mammoth@1.4.8/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+class EnhancedBookReader {
+    constructor() {
+        this.supportedFormats = ['docx', 'pdf', 'txt'];
+        this.fileUrl = "{{ asset('uploads/files/' ~ livre.fichier) }}";
+        this.fileName = "{{ livre.fichier }}";
+        this.fileExtension = this.getFileExtension();
+    }
+    
+    getFileExtension() {
+        return this.fileName.split('.').pop().toLowerCase();
+    }
+    
+    async init() {
+        if (!this.isFormatSupported()) {
+            this.showFormatError();
+            return;
+        }
+        
+        try {
+            await this.loadBook();
+        } catch (error) {
+            console.error("Erreur de chargement:", error);
+            this.showFallbackOptions();
+        }
+    }
+    
+    isFormatSupported() {
+        return this.supportedFormats.includes(this.fileExtension);
+    }
+    
+    async loadBook() {
+        this.showLoading();
+        
+        switch(this.fileExtension) {
+            case 'docx':
+                await this.loadDocx();
+                break;
+            case 'pdf':
+                await this.loadPDF();
+                break;
+            case 'txt':
+                await this.loadText();
+                break;
+            default:
+                throw new Error('Format non supporté');
+        }
+    }
+    
+    async loadDocx() {
+        try {
+            const response = await fetch(this.fileUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            
+            // Vérifier que c'est bien un DOCX (vérifier l'en-tête)
+            const header = new Uint8Array(arrayBuffer.slice(0, 4));
+            const signature = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // Signature d'un fichier DOCX (PK en hexa)
+            if (signature !== '504b0304') {
+                throw new Error('Le fichier n\'est pas un DOCX valide');
+            }
+            
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            
+            document.getElementById('readerContainer').innerHTML = `
+                <div class="book-content">
+                    <div class="book-text" id="bookText">${result.value}</div>
+                </div>
+            `;
+            
+            this.applyStyles();
+            
+        } catch (error) {
+            console.error('Erreur DOCX:', error);
+            throw error;
+        }
+    }
+    
+    async loadPDF() {
+        try {
+            const loadingTask = pdfjsLib.getDocument(this.fileUrl);
+            const pdf = await loadingTask.promise;
+            
+            let fullText = '';
+            
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += `<div class="page">${pageText}</div>`;
+            }
+            
+            document.getElementById('readerContainer').innerHTML = `
+                <div class="book-content">
+                    <div class="book-text" id="bookText">${fullText}</div>
+                </div>
+            `;
+            
+            this.applyStyles();
+            
+        } catch (error) {
+            console.error('Erreur PDF:', error);
+            throw error;
+        }
+    }
+    
+    async loadText() {
+        try {
+            const response = await fetch(this.fileUrl);
+            const text = await response.text();
+            
+            const formattedText = text
+                .replace(/\n/g, '<br>')
+                .replace(/\r/g, '');
+            
+            document.getElementById('readerContainer').innerHTML = `
+                <div class="book-content">
+                    <div class="book-text" id="bookText">${formattedText}</div>
+                </div>
+            `;
+            
+            this.applyStyles();
+            
+        } catch (error) {
+            console.error('Erreur TXT:', error);
+            throw error;
+        }
+    }
+    
+    applyStyles() {
+        const content = document.getElementById('bookText');
+        if (content) {
+            content.style.fontSize = '18px';
+            content.style.lineHeight = '1.8';
+            content.style.padding = '20px';
+            
+            // Styliser les éléments
+            content.querySelectorAll('h1').forEach(h1 => {
+                h1.style.fontSize = '2.5rem';
+                h1.style.margin = '2rem 0 1rem';
+                h1.style.borderBottom = '2px solid #007bff';
+                h1.style.paddingBottom = '10px';
+            });
+            
+            content.querySelectorAll('p').forEach(p => {
+                p.style.marginBottom = '1.5rem';
+                p.style.textAlign = 'justify';
+            });
+        }
+    }
+    
+    showLoading() {
+        document.getElementById('readerContainer').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <h4 class="mt-4">Chargement du livre...</h4>
+                <p class="text-muted">Veuillez patienter</p>
+                <div class="progress mt-4" style="height: 8px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    showFormatError() {
+        document.getElementById('readerContainer').innerHTML = `
+            <div class="alert alert-warning">
+                <h4><i class="fas fa-exclamation-triangle me-2"></i>Format non supporté</h4>
+                <p>Le format <strong>.${this.fileExtension}</strong> n'est pas supporté pour la lecture en ligne.</p>
+                <p>Formats supportés : ${this.supportedFormats.join(', ').toUpperCase()}</p>
+                <div class="mt-3">
+                    <button onclick="reader.convertToPDF()" class="btn btn-primary">
+                        <i class="fas fa-sync-alt me-1"></i>Convertir en PDF
+                    </button>
+                    <a href="{{ path('app_home') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-arrow-left me-1"></i>Retour
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+    
+    showFallbackOptions() {
+        document.getElementById('readerContainer').style.display = 'none';
+        document.getElementById('fallbackContent').style.display = 'block';
+    }
+    
+    async convertToPDF() {
+        // Cette méthode pourrait être implémentée avec un service backend
+        // pour convertir le fichier en PDF
+        alert('La conversion en PDF nécessite une implémentation côté serveur.');
+    }
+}
+
+// Initialiser le lecteur
+let reader = new EnhancedBookReader();
+reader.init();
+
+// Exporter pour le débogage
+window.reader = reader;
+</script>
+
+<style>
+.book-content {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    min-height: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.book-text {
+    font-family: 'Georgia', serif;
+    line-height: 1.8;
+    color: #333;
+}
+
+.page {
+    page-break-after: always;
+    margin-bottom: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px dashed #ddd;
+}
+
+.page:last-child {
+    border-bottom: none;
+}
+
+/* Styles pour les différents formats */
+.format-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #6c757d;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+@media print {
+    .book-content {
+        box-shadow: none;
+        max-height: none;
+        overflow: visible;
+    }
+}
+</style>
+{% endblock %}

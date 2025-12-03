@@ -5,8 +5,12 @@ use App\Repository\LivreRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\HttpFoundation\File\File;
+
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: LivreRepository::class)]
+#[Vich\Uploadable]
 class Livre
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
@@ -18,19 +22,9 @@ class Livre
     #[ORM\Column]
     private ?int $nbPages = null;
 
-   #[ORM\Column(length: 10)]
-private ?string $dateEdition = null;
+    #[ORM\Column(length: 10)]
+    private ?string $dateEdition = null;
 
-public function getDateEdition(): ?string
-{
-    return $this->dateEdition;
-}
-
-public function setDateEdition(?string $dateEdition): self
-{
-    $this->dateEdition = $dateEdition;
-    return $this;
-}
     #[ORM\Column]
     private ?int $nbExemplaires = null;
 
@@ -52,6 +46,50 @@ public function setDateEdition(?string $dateEdition): self
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[Vich\UploadableField(mapping: 'livres_files', fileNameProperty: 'fichier')]
+    private ?File $fichierFile = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $fichier = null;
+
+   public function setFichierFile(?File $fichierFile = null): void
+{
+    $this->fichierFile = $fichierFile;
+
+    if ($fichierFile) {
+        $this->updatedAt = new \DateTime(); // <-- pas DateTimeImmutable
+    }
+}
+
+    public function getFichierFile(): ?File
+    {
+        return $this->fichierFile;
+    }
+
+    public function getFichier(): ?string
+    {
+        return $this->fichier;
+    }
+
+    public function setFichier(?string $fichier): self
+    {
+        $this->fichier = $fichier;
+        return $this;
+    }
+#[ORM\Column(type: 'datetime', nullable: true)]
+private ?\DateTime $updatedAt = null;
+
+public function getUpdatedAt(): ?\DateTime
+{
+    return $this->updatedAt;
+}
+
+public function setUpdatedAt(?\DateTime $updatedAt): self
+{
+    $this->updatedAt = $updatedAt;
+    return $this;
+}
+
     public function __construct()
     {
         $this->auteurs = new ArrayCollection();
@@ -63,7 +101,6 @@ public function setDateEdition(?string $dateEdition): self
     }
 
     // ---------- GETTERS / SETTERS ----------
-
     public function getId(): ?int { return $this->id; }
 
     public function getTitre(): ?string { return $this->titre; }
@@ -72,6 +109,8 @@ public function setDateEdition(?string $dateEdition): self
     public function getNbPages(): ?int { return $this->nbPages; }
     public function setNbPages(int $nbPages): self { $this->nbPages = $nbPages; return $this; }
 
+    public function getDateEdition(): ?string { return $this->dateEdition; }
+    public function setDateEdition(?string $dateEdition): self { $this->dateEdition = $dateEdition; return $this; }
 
     public function getNbExemplaires(): ?int { return $this->nbExemplaires; }
     public function setNbExemplaires(int $nbExemplaires): self { $this->nbExemplaires = $nbExemplaires; return $this; }
@@ -88,24 +127,21 @@ public function setDateEdition(?string $dateEdition): self
     public function getCategorie(): ?Categorie { return $this->categorie; }
     public function setCategorie(?Categorie $categorie): self { $this->categorie = $categorie; return $this; }
 
-    // ---------- Gestion ManyToMany auteurs ----------
     public function getAuteurs(): Collection { return $this->auteurs; }
-
     public function addAuteur(Auteur $auteur): self
     {
-        if (!$this->auteurs->contains($auteur)) {
-            $this->auteurs->add($auteur);
-        }
+        if (!$this->auteurs->contains($auteur)) { $this->auteurs->add($auteur); }
         return $this;
     }
+    public function removeAuteur(Auteur $auteur): self { $this->auteurs->removeElement($auteur); return $this; }
 
-    public function removeAuteur(Auteur $auteur): self
-    {
-        $this->auteurs->removeElement($auteur);
-        return $this;
-    }
-
-    // ---------- Image ----------
     public function getImage(): ?string { return $this->image; }
     public function setImage(?string $image): self { $this->image = $image; return $this; }
+
+    // ---------- Fichier ----------
+
+
+
+  
+
 }
