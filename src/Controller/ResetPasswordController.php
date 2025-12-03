@@ -56,19 +56,16 @@ class ResetPasswordController extends AbstractController
     /**
      * Confirmation page after a user has requested a password reset.
      */
-    #[Route('/check-email', name: 'app_check_email')]
-    public function checkEmail(): Response
-    {
-        // Generate a fake token if the user does not exist or someone hit this page directly.
-        // This prevents exposing whether or not a user was found with the given email address or not
-        if (null === ($resetToken = $this->getTokenObjectFromSession())) {
-            $resetToken = $this->resetPasswordHelper->generateFakeResetToken();
-        }
+   #[Route('/reset-password/check-email', name: 'app_check_email')]
+public function checkEmail(): Response
+{
+    // Le token a déjà été envoyé par email si l’utilisateur existe.
+    // Cette page affiche simplement un message générique.
 
-        return $this->render('reset_password/check_email.html.twig', [
-            'resetToken' => $resetToken,
-        ]);
-    }
+    return $this->render('reset_password/check_email.html.twig');
+}
+
+
 
     /**
      * Validates and process the reset URL that the user clicked in their email.
