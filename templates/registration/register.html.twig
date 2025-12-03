@@ -1,0 +1,406 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription{% endblock %}
+
+{% block body %}
+<style>
+    /* Variables de couleur (gardées identiques) */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+        --text-dark: #2d3748;
+        --text-light: #f7fafc;
+        --accent: #ed64a6;
+        --success: #48bb78;
+        --warning: #ed8936;
+    }
+
+    /* Reset simplifié */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--primary-gradient);
+        padding: 20px;
+    }
+
+    /* Container principal simplifié */
+    .glass-container {
+        width: 100%;
+        max-width: 500px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px 35px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Header simplifié */
+    .register-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .register-icon {
+        width: 70px;
+        height: 70px;
+        background: var(--secondary-gradient);
+        border-radius: 18px;
+        margin: 0 auto 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 32px;
+    }
+
+    .register-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        background: var(--secondary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+    }
+
+    .register-header p {
+        color: #718096;
+        font-size: 15px;
+    }
+
+    /* Messages d'erreur simplifiés */
+    .alert-message {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .alert-danger {
+        background: #fed7d7;
+        color: #9b2c2c;
+        border-left: 4px solid #f56565;
+    }
+
+    .alert-success {
+        background: #c6f6d5;
+        color: #22543d;
+        border-left: 4px solid #48bb78;
+    }
+
+    /* Formulaire simplifié */
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #4a5568;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .required-star {
+        color: #f56565;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0aec0;
+        font-size: 20px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 16px 20px 16px 50px;
+        font-size: 15px;
+        color: var(--text-dark);
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .form-input:focus {
+        border-color: #805ad5;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.1);
+    }
+
+    /* Password toggle simplifié */
+    .password-toggle {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #a0aec0;
+        cursor: pointer;
+        font-size: 20px;
+    }
+
+    /* Checkbox simplifié */
+    .checkbox-group {
+        margin-bottom: 25px;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+    }
+
+    .checkbox-custom {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e0;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }
+
+    .checkbox-wrapper input:checked + .checkbox-custom {
+        background: var(--secondary-gradient);
+        border-color: transparent;
+    }
+
+    .checkbox-wrapper input:checked + .checkbox-custom::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .checkbox-text {
+        color: #4a5568;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .terms-link {
+        color: #805ad5;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .terms-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Bouton principal simplifié */
+    .submit-btn {
+        width: 100%;
+        padding: 18px;
+        background: var(--secondary-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
+    }
+
+    /* Footer simplifié */
+    .register-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        color: #718096;
+        font-size: 14px;
+    }
+
+    .login-link {
+        color: #805ad5;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 576px) {
+        .glass-container {
+            padding: 30px 25px;
+            border-radius: 16px;
+        }
+        
+        .register-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+        }
+        
+        .register-header h1 {
+            font-size: 24px;
+        }
+        
+        .form-input {
+            padding: 14px 18px 14px 45px;
+        }
+        
+        .submit-btn {
+            padding: 16px;
+        }
+    }
+</style>
+
+<!-- Container principal -->
+<div class="glass-container">
+    <!-- Header -->
+    <div class="register-header">
+        <div class="register-icon">
+            <i class="bi bi-person-plus-fill"></i>
+        </div>
+        <h1>Créer un compte</h1>
+        <p>Rejoignez notre communauté dès aujourd'hui</p>
+    </div>
+
+    <!-- Messages d'erreur -->
+    {{ form_errors(registrationForm) }}
+
+    <!-- Formulaire -->
+    {{ form_start(registrationForm, {'attr': {'id': 'registerForm', 'class': 'register-form'}}) }}
+    
+        <!-- Email -->
+        <div class="form-group">
+            <label class="form-label">
+                Adresse Email
+                <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+                <i class="bi bi-envelope-fill input-icon"></i>
+                {{ form_widget(registrationForm.email, {
+                    'attr': {
+                        'class': 'form-input',
+                        'placeholder': 'exemple@email.com',
+                        'required': 'required',
+                        'autocomplete': 'email'
+                    }
+                }) }}
+            </div>
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="form-group">
+            <label class="form-label">
+                Mot de passe
+                <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+                <i class="bi bi-lock-fill input-icon"></i>
+                {{ form_widget(registrationForm.plainPassword, {
+                    'attr': {
+                        'class': 'form-input',
+                        'placeholder': 'Minimum 8 caractères',
+                        'required': 'required',
+                        'autocomplete': 'new-password',
+                        'id': 'password'
+                    }
+                }) }}
+                <button type="button" class="password-toggle" id="togglePassword">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Conditions d'utilisation -->
+        <div class="checkbox-group">
+            <label class="checkbox-wrapper">
+                {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'hidden'}}) }}
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-text">
+                    J'accepte les 
+                    <a href="#" class="terms-link">conditions d'utilisation</a>
+                    et la 
+                    <a href="#" class="terms-link">politique de confidentialité</a>
+                    *
+                </span>
+            </label>
+        </div>
+
+        <!-- Bouton de soumission -->
+        <button type="submit" class="submit-btn">
+            <span>S'inscrire gratuitement</span>
+            <i class="bi bi-arrow-right"></i>
+        </button>
+    {{ form_end(registrationForm) }}
+
+    <!-- Footer -->
+    <div class="register-footer">
+        Déjà un compte ?
+        <a href="{{ path('app_login') }}" class="login-link">Se connecter</a>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+<!-- Scripts simplifiés -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? 
+                    '<i class="bi bi-eye"></i>' : 
+                    '<i class="bi bi-eye-slash"></i>';
+            });
+        }
+
+        // Form submission
+        const form = document.getElementById('registerForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('.submit-btn');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Création du compte...';
+                    submitBtn.disabled = true;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
